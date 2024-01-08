@@ -4,13 +4,13 @@ import 'package:cross_file/cross_file.dart';
 import 'package:speed_test_dart/classes/server.dart';
 import 'package:tus_client_dart/tus_client_dart.dart';
 
-abstract class TusClientBase {
+abstract class VimeoTusClientBase {
   /// Version of the tus protocol used by the client. The remote server needs to
   /// support this version, too.
   final tusVersion = "1.0.0";
 
   /// The tus server Uri
-  Uri? url;
+  final Uri url;
 
   Map<String, String>? metadata;
 
@@ -23,27 +23,21 @@ abstract class TusClientBase {
   /// List of [Server] that are good for testing speed
   List<Server>? bestServers;
 
-  TusClientBase(
+  VimeoTusClientBase(
+    this.url,
     this.file, {
-    this.store,
     this.maxChunkSize = 512 * 1024,
     this.retries = 0,
     this.retryScale = RetryScale.constant,
     this.retryInterval = 0,
   });
 
-  /// Create a new upload URL
-  Future<void> createUpload();
-
-  /// Checks if upload can be resumed.
-  Future<bool> isResumable();
-
   /// Starts an upload
   Future<void> upload({
-    Function(double, Duration)? onProgress,
-    Function(TusClientBase, Duration?)? onStart,
+    Function(double, int, Duration)? onProgress,
+    Function(VimeoTusClientBase, Duration?)? onStart,
     Function()? onComplete,
-    required Uri uri,
+    Function(Exception)? onError,
     Map<String, String>? metadata = const {},
     Map<String, String>? headers = const {},
   });
@@ -53,9 +47,6 @@ abstract class TusClientBase {
 
   /// Cancels the upload
   Future<bool> cancelUpload();
-
-  /// Function to be called after completing upload
-  Future<void> onCompleteUpload();
 
   /// Override this method to customize creating file fingerprint
   String? generateFingerprint() {
@@ -84,9 +75,6 @@ abstract class TusClientBase {
         .join(",");
   }
 
-  /// Storage used to save and retrieve upload URLs by its fingerprint.
-  final TusStore? store;
-
   /// File to upload, must be in[XFile] type
   final XFile file;
 
@@ -101,7 +89,4 @@ abstract class TusClientBase {
 
   /// The scale type used to increase the interval of time between every retry.
   final RetryScale retryScale;
-
-  /// Whether the client supports resuming
-  bool get resumingEnabled => store != null;
 }
